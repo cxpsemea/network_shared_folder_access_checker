@@ -1,0 +1,31 @@
+name: Release Workflow
+on: [push]
+jobs:
+    build:
+      runs-on: ubuntu-latest
+      steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Checkmarx SAST Scan
+        uses: miguelfreitas93/checkmarx-github-action@v1.0.0
+        with:
+            cxAction: Scan
+            cxServer: ${{ secrets.CX_SERVER }}
+            cxUsername: ${{ secrets.CX_EMAIL }}
+            cxPassword: ${{ secrets.CX_PASSWORD }}
+            cxTeam: ${{ secrets.CX_TEAM }}
+            cxPreset: All
+            cxHigh: 0
+            cxMedium: 0
+            cxLog: log.log
+      - name: Upload artifact
+        uses: actions/upload-artifact@v1.0.0
+        with:
+            name: log.log
+            path: log.log
+      - name: Release
+        uses: fnkr/github-action-ghr@v1
+        env:
+            GHR_COMPRESS: zip
+            GHR_PATH: src/,README.md
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
