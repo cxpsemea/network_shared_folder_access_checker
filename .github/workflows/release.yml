@@ -13,5 +13,5 @@ jobs:
         uses: fnkr/github-action-ghr@v1
         env:
             GHR_COMPRESS: zip
-            GHR_PATH: src/NetworkSharedFolderAccessChecker.ps1,README.md
+            GHR_PATH: src/NetworkSharedFolderAccessChecker.ps1;README.md
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
