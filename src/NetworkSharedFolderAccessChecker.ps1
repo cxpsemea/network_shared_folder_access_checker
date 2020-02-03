@@ -2,7 +2,9 @@
 .SYNOPSIS
     Powershell Script to check if user has access to a Network Shared Folder
 .DESCRIPTION
-    .
+    Powershell Script that checks access to every Network Shared Folder provided by user, 
+    check if he is able to create a file and if not, 
+    notifies a email list about Access permission issues over those Network Shared Folders
 .PARAMETER Path
     The path to the .
 .PARAMETER LiteralPath
@@ -13,51 +15,61 @@
     interpret any characters as escape sequences.
 #>
 Param(
+    # Network Shared Folders (eg. \\temp\test,\\temp\sample)
     [Parameter(
         Position = 0,
         Mandatory = $true,
         HelpMessage = "Network Shared Folders (eg. \\temp\test,\\temp\sample)"
     )][string[]] $networkShareFolders,
+    # SMTP Server (eg. smtp.mailtrap.io)
     [Parameter(
         Position = 1,
         Mandatory = $true,
         HelpMessage = "SMTP Server (eg. smtp.mailtrap.io)"
     )][string] $smtpServer,
+    # SMTP Port (eg. 25 or 465 or 587 or 2525)
     [Parameter(
         Position = 2,
         Mandatory = $true,
         HelpMessage = "SMTP Port (eg. 25 or 465 or 587 or 2525)"
     )][int] $smtpPort,
+    # SMTP SSL (eg. true or false)
     [Parameter(
         Position = 3,
         Mandatory = $true,
         HelpMessage = "SMTP SSL (eg. true or false)"
     )][string] $smtpSSL,
+    # SMTP Username
     [Parameter(
         Position = 4,
         Mandatory = $true,
         HelpMessage = "SMTP Username"
     )][string] $smtpUsername,
+    # SMTP Password
     [Parameter(
         Position = 5,
         Mandatory = $true,
         HelpMessage = "SMTP Password"
     )][string] $smtpPassword,
+    # Email Sender (eg. first.last@company.com)
     [Parameter(
         Position = 6,
         Mandatory = $true,
         HelpMessage = "Email Sender (eg. first.last@company.com)"
     )][string] $emailFrom,
+    # Email Recipients (eg. first.last@company.com,second.last@company.com)
     [Parameter(
         Position = 7,
         Mandatory = $true,
         HelpMessage = "Email Recipients (eg. first.last@company.com,second.last@company.com)"
     )][string[]] $emailList,
+    # Email Subject, Default = [Checkmarx] Cannot Access to Shared Folder
     [Parameter(
         Position = 8,
         Mandatory = $false,
         HelpMessage = "Email Subject"
     )][string] $emailSubject = "[Checkmarx] Cannot Access to Shared Folder",
+    # Email Body (HTML), Default = Hi,</br></br>Impossible to access to the following shared folders:</br></br>#SHARED_FOLDERS</br></br>Best Regards,</br>Checkmarx
     [Parameter(
         Position = 9,
         Mandatory = $false,
@@ -71,62 +83,67 @@ on the network.
 
 Error codes and corresponding checks
     - 00 :: No Error
-    - 01 :: String is not a network address
-    - 02 :: Failed to read/access from remote share
+    - 01 :: String is empty or null
+    - 02 :: String is not a network address
     - 03 :: Failed to write to remote share
-    - 10 :: Network Access Failure
 #>
 function folderCheck {
     Param(
         [string]$networkPath
     )
-    try {
+    if ($networkPath -ne $null -and $networkPath.Length -gt 0) {
+        try {
+            $creationTime = get-date -format "dd_MM_yyyy__HH_mm_ss"
+            # Creating temporary variables
+            $tempFile = "test_${creationTime}.txt"
+            $tempPath = $networkPath
 
-        # Creating temporary variables
-        $tempFile = "test.txt"
-        $tempPath = $networkPath
+            # Check Shared Network Folders pattern
+            if ( $tempPath -notmatch "^(\\)(\\[A-Za-z0-9-_]+){1,}(\\?)$" ) {
+                Write-Error "'${tempPath}' is not a valid Network Shared Folder. Please check the path of this shared folder, it should be valid for this regex expression: ^(\\)(\\[A-Za-z0-9-_]+){1,}(\\?)$"
+                return 2
+            }
+            Write-Host "Checking access to: ${tempPath}"
 
-        # Check Shared Network Folders pattern
-        if ( $networkPath -notmatch "^(\\)(\\[A-Za-z0-9-_]+){1,}(\\?)$" ) {
-            Write-Error "'${networkPath}' is not a valid Network Shared Folder. Please check the path of this shared folder, it should be valid for this regex expression: ^(\\)(\\[A-Za-z0-9-_]+){1,}(\\?)$"
-            return 1
-        }
-        Write-Host "Checking access to: ${networkPath}"
+            # Concatenate with temporary filename
+            if ($tempPath -notmatch '\\$') {
+                $tempPath += "\${tempFile}"
+            }
+            else {
+                $tempPath += $tempFile
+            }
+            Write-Host "Creating temporary file : ${tempPath}"
 
-        # Concatenate with temporary filename
-        if ($networkPath -notmatch '\\$') {
-            $tempPath += "\${tempFile}"
-        }
-        else {
-            $tempPath += $tempFile
-        }
-        Write-Host "Creating temporary file : ${tempPath}"
+            # Check and cleanup existing file (might fail if we don't have the permissions)
+            if (Test-Path -Path $tempPath) { 
+                Remove-Item -Path $tempPath 
+            }
+            Add-Content -Path $tempPath -Value "TestString" -ErrorAction Stop
 
-        # Check and cleanup existing file (might fail if we don't have the permissions)
-        if (Test-Path -Path $tempPath) { 
-            Remove-Item -Path $tempPath 
-        }
-        Add-Content -Path $tempPath -Value "TestString" -ErrorAction Stop
-
-        if (Test-Path -Path $tempPath) {
-            Write-Host "File ${tempPath} was created with success !"
-        }
-        else {
-            Write-Error "File ${tempPath} was NOT created with success !"
-            return 1
-        }
-        # Clean up if file was written to disk
-        Write-Host "Removing temporary file: ${tempPath}"
-        Remove-Item -Path $tempPath
+            if (Test-Path -Path $tempPath) {
+                Write-Host "File ${tempPath} was created with success !"
+            }
+            else {
+                Write-Error "File ${tempPath} was NOT created with success !"
+                return 3
+            }
+            # Clean up if file was written to disk
+            Write-Host "Removing temporary file: ${tempPath}"
+            Remove-Item -Path $tempPath
         
-        Write-Host "Access to ${networkPath} is granted !`n"
+            Write-Host "Access to ${tempPath} is granted !`n"
+        }
+        catch {
+            # Failed to write to remote share
+            Write-Error $_.Exception.Message
+            return 3
+        }
+        return 0
     }
-    catch [System.IO.IOException] {
-        # Failed to write to remote share
-        Write-Error $_
-        return 3
+    else {
+        Write-Error "Empty or Null Network Shared Folder provided : ${networkPath}"
+        return 1
     }
-    return 0
 }
 
 <#
@@ -134,6 +151,7 @@ This is the method for sending an email if access to a network share is not avai
 
 Error codes and corresponding checks
     - 00 :: No Error
+    - 01 :: Error Sending Email
 #>
 function sendEmail {
     Param(
@@ -148,11 +166,16 @@ function sendEmail {
         [string] $body,
         [string[]] $sharedFolders
     )
-        $sharedFoldersBody = ""
-        foreach($sharedFolder in $sharedFolders){
-            $sharedFoldersBody += "<li>${sharedFolder}</li>"
-        }
-        $body = $body.Replace("#SHARED_FOLDERS", $sharedFoldersBody)
+    $sharedFoldersBody = ""
+    foreach ($sharedFolder in $sharedFolders) {
+        $sharedFolder = $sharedFolder.Replace("<", "")
+        $sharedFolder = $sharedFolder.Replace(">", "")
+        $sharedFolder = $sharedFolder.Replace("'", "")
+        $sharedFolder = $sharedFolder.Replace("/", "")
+        $sharedFolder = $sharedFolder.Replace("`"", "")
+        $sharedFoldersBody += "<li>${sharedFolder}</li>"
+    }
+    $body = $body.Replace("#SHARED_FOLDERS", $sharedFoldersBody)
     try {
         $smtpClient = New-Object Net.Mail.SmtpClient($server, $port)
         $smtpClient.EnableSsl = $ssl
@@ -166,13 +189,33 @@ function sendEmail {
     
         foreach ($emailTo in $to) {
             $smtpClient.Send($message)
-            Write-Host "Email was sent to: ${emailTo}"
         }
+        $countEmailSent = $to.Length
+        
+        Write-Host "Email was sent to ${countEmailSent} recipients: ${to}"
+        return 0
     }
     catch {
-        
+        $exceptionMessage = $_.Exception.Message
+        Write-Error "Failing to send a notification email: ${exceptionMessage}"
+        return 1
     }
 }
+
+$startTime = get-date -format "dd/MM/yyyy HH:mm:ss"
+Write-Host "`nStart: ${startTime}`n"
+
+Write-Host "INPUTS:"
+Write-Host "`tnetworkShareFolders: ${networkShareFolders}"
+Write-Host "`tsmtpServer: ${smtpServer}"
+Write-Host "`tsmtpPort: ${smtpPort}"
+Write-Host "`tsmtpSSL: ${smtpSSL}"
+Write-Host "`tsmtpUsername: ${smtpUsername}"
+Write-Host "`tsmtpPassword: ******"
+Write-Host "`temailFrom: ${emailFrom}"
+Write-Host "`temailList: ${emailList}"
+Write-Host "`temailSubject: ${emailSubject}"
+Write-Host "`temailBody: ${emailBody}`n`n"
 
 $notAccessList = @()
 $countNetworkShares = $networkShareFolders.Count
@@ -186,7 +229,7 @@ foreach ($networkShare in $networkShareFolders) {
 
 if ($notAccessList.Count -gt 0) {
     $countNoAccess = $notAccessList.Count
-    Write-Host "No access to ${countNoAccess} Network Shared Folders. Sending email notification..."
+    Write-Host "No access to ${countNoAccess} Network Shared Folders: ${notAccessList}. Sending email notification..."
     $ssl = $False
 
     if ($smtpSSL -eq "true") {
@@ -196,5 +239,14 @@ if ($notAccessList.Count -gt 0) {
         $ssl = $False
     }
     $secureSmtpPassword = ConvertTo-SecureString -String $smtpPassword -AsPlainText -Force
-    sendEmail $smtpServer $smtpPort $ssl $smtpUsername $secureSmtpPassword $emailFrom $emailList $emailSubject $emailBody $notAccessList
+    $emailsSent = sendEmail $smtpServer $smtpPort $ssl $smtpUsername $secureSmtpPassword $emailFrom $emailList $emailSubject $emailBody $notAccessList
 }
+else {
+    Write-Host "Access to every Network Shared Folder is OK !"
+}
+
+$endTime = get-date -format "dd/MM/yyyy HH:mm:ss"
+$nts = New-TimeSpan -Start $startTime -End $endTime
+Write-Host "`nStart: ${startTime}"
+Write-Host "End: ${endTime}"
+Write-Host "Total Duration: ${nts}"
