@@ -1,0 +1,17 @@
+name: Release Workflow
+on:
+    push:
+        tags:
+            - v*
+jobs:
+    build:
+      runs-on: ubuntu-latest
+      steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Release
+        uses: fnkr/github-action-ghr@v1
+        env:
+            GHR_COMPRESS: zip
+            GHR_PATH: src/NetworkSharedFolderAccessChecker.ps1;README.md
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
