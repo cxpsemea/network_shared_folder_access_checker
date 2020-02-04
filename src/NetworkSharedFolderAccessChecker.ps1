@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
-    Powershell Script to check if user has access to a Network Shared Folder
+    Powershell Script to check if user has access to a Network Shared Folder and SQL Server
 .DESCRIPTION
-    Powershell Script that checks access to every Network Shared Folder provided by user, 
+    Powershell Script that checks access to every Network Shared Folder and SQL Server provided by user, 
     check if he is able to create a file and if not, 
     notifies a email list about Access permission issues over those Network Shared Folders
 .PARAMETER Path
@@ -21,60 +21,84 @@ Param(
         Mandatory = $true,
         HelpMessage = "Network Shared Folders (eg. \\temp\test,\\temp\sample)"
     )][string[]] $networkShareFolders,
-    # SMTP Server (eg. smtp.mailtrap.io)
+    # SQL Server Name
     [Parameter(
         Position = 1,
+        Mandatory = $true,
+        HelpMessage = "SQL Server Name"
+    )][string] $sqlServerName,
+    # SQL Database
+    [Parameter(
+        Position = 2,
+        Mandatory = $true,
+        HelpMessage = "SQL Database"
+    )][string] $sqlDatabase,
+    # SQL Username
+    [Parameter(
+        Position = 3,
+        Mandatory = $true,
+        HelpMessage = "SQL Username"
+    )][string] $sqlUsername,
+    # SQL Password
+    [Parameter(
+        Position = 4,
+        Mandatory = $true,
+        HelpMessage = "SQL Password"
+    )][string] $sqlPassword,
+    # SMTP Server (eg. smtp.mailtrap.io)
+    [Parameter(
+        Position = 5,
         Mandatory = $true,
         HelpMessage = "SMTP Server (eg. smtp.mailtrap.io)"
     )][string] $smtpServer,
     # SMTP Port (eg. 25 or 465 or 587 or 2525)
     [Parameter(
-        Position = 2,
+        Position = 6,
         Mandatory = $true,
         HelpMessage = "SMTP Port (eg. 25 or 465 or 587 or 2525)"
     )][int] $smtpPort,
     # SMTP SSL (eg. true or false)
     [Parameter(
-        Position = 3,
+        Position = 7,
         Mandatory = $true,
         HelpMessage = "SMTP SSL (eg. true or false)"
     )][string] $smtpSSL,
     # SMTP Username
     [Parameter(
-        Position = 4,
+        Position = 8,
         Mandatory = $true,
         HelpMessage = "SMTP Username"
     )][string] $smtpUsername,
     # SMTP Password
     [Parameter(
-        Position = 5,
+        Position = 9,
         Mandatory = $true,
         HelpMessage = "SMTP Password"
     )][string] $smtpPassword,
     # Email Sender (eg. first.last@company.com)
     [Parameter(
-        Position = 6,
+        Position = 10,
         Mandatory = $true,
         HelpMessage = "Email Sender (eg. first.last@company.com)"
     )][string] $emailFrom,
     # Email Recipients (eg. first.last@company.com,second.last@company.com)
     [Parameter(
-        Position = 7,
+        Position = 11,
         Mandatory = $true,
         HelpMessage = "Email Recipients (eg. first.last@company.com,second.last@company.com)"
     )][string[]] $emailList,
     # Email Subject, Default = [Checkmarx] Cannot Access to Shared Folder
     [Parameter(
-        Position = 8,
+        Position = 12,
         Mandatory = $false,
         HelpMessage = "Email Subject"
     )][string] $emailSubject = "[Checkmarx] Cannot Access to Shared Folder",
     # Email Body (HTML), Default = Hi,</br></br>Impossible to access to the following shared folders:</br></br>#SHARED_FOLDERS</br></br>Best Regards,</br>Checkmarx
     [Parameter(
-        Position = 9,
+        Position = 13,
         Mandatory = $false,
         HelpMessage = "Email Body (HTML)"
-    )][string] $emailBody = "Hi,</br></br>Impossible to access to the following shared folders:</br></br>#SHARED_FOLDERS</br></br>Best Regards,</br>Checkmarx"
+    )][string] $emailBody = "Hi,</br></br>Impossible to access to the following shared folders:</br></br>#SHARED_FOLDERS#DATABASE</br></br>Best Regards,</br>Checkmarx"
 )
 
 <#
@@ -164,7 +188,10 @@ function sendEmail {
         [string[]] $to,
         [string] $subject,
         [string] $body,
-        [string[]] $sharedFolders
+        [string[]] $sharedFolders,
+        [bool] $dbAvailable,
+        [string] $sqlServer,
+        [string] $sqlDatabase
     )
     $sharedFoldersBody = ""
     foreach ($sharedFolder in $sharedFolders) {
@@ -174,6 +201,11 @@ function sendEmail {
         $sharedFolder = $sharedFolder.Replace("/", "")
         $sharedFolder = $sharedFolder.Replace("`"", "")
         $sharedFoldersBody += "<li>${sharedFolder}</li>"
+    }
+    if($dbAvailable){
+        $body = $body.Replace("#DATABASE", "")
+    } else {
+        $body = $body.Replace("#DATABASE", "</br></br>Impossible to access SQL Server Database:</br></br><li>${sqlServer}:${sqlDatabase}</li>")
     }
     $body = $body.Replace("#SHARED_FOLDERS", $sharedFoldersBody)
     try {
@@ -202,11 +234,41 @@ function sendEmail {
     }
 }
 
+<#
+This is the method for checking SQL Server Database is accessible.
+
+Error codes and corresponding checks
+    - 00 :: No Error
+#>
+function checkDbConnection {
+    Param(
+        [string] $server,
+        [string] $database,
+        [string] $username,
+        [string] $password
+    )
+    try {
+        $connectionString = 'Data Source={0};database={1};User ID={2};Password={3}' -f $server, $database, $username, $password
+        $sqlConnection = New-Object System.Data.SqlClient.SqlConnection $connectionString
+        $sqlConnection.Open()
+        $sqlConnection.Close()
+        return $true
+    } catch{
+        $exceptionMessage = $_.Exception.Message
+        Write-Error "Failing to connect to SQL Server Database ${server}:${database} : ${exceptionMessage}"
+        return $false
+    }
+}
+
 $startTime = get-date -format "dd/MM/yyyy HH:mm:ss"
 Write-Host "`nStart: ${startTime}`n"
 
 Write-Host "INPUTS:"
 Write-Host "`tnetworkShareFolders: ${networkShareFolders}"
+Write-Host "`tsqlServer: ${sqlServerName}"
+Write-Host "`tsqlDatabase: ${sqlDatabase}"
+Write-Host "`tsqlUsername: ${sqlUsername}"
+Write-Host "`tsqlPassword: ******"
 Write-Host "`tsmtpServer: ${smtpServer}"
 Write-Host "`tsmtpPort: ${smtpPort}"
 Write-Host "`tsmtpSSL: ${smtpSSL}"
@@ -216,6 +278,8 @@ Write-Host "`temailFrom: ${emailFrom}"
 Write-Host "`temailList: ${emailList}"
 Write-Host "`temailSubject: ${emailSubject}"
 Write-Host "`temailBody: ${emailBody}`n`n"
+
+$dbAvailable = checkDbConnection $sqlServerName $sqlDatabase $sqlUsername $sqlPassword
 
 $notAccessList = @()
 $countNetworkShares = $networkShareFolders.Count
@@ -239,7 +303,7 @@ if ($notAccessList.Count -gt 0) {
         $ssl = $False
     }
     $secureSmtpPassword = ConvertTo-SecureString -String $smtpPassword -AsPlainText -Force
-    $emailsSent = sendEmail $smtpServer $smtpPort $ssl $smtpUsername $secureSmtpPassword $emailFrom $emailList $emailSubject $emailBody $notAccessList
+    $emailsSent = sendEmail $smtpServer $smtpPort $ssl $smtpUsername $secureSmtpPassword $emailFrom $emailList $emailSubject $emailBody $notAccessList $dbAvailable $sqlServerName $sqlDatabase
 }
 else {
     Write-Host "Access to every Network Shared Folder is OK !"
