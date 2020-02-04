@@ -1,5 +1,5 @@
 # network_shared_folder_access_checker
-Powershell Script to check if user has access to a Network Shared Folder
+Powershell Script to check if user has access to a Network Shared Folder and SQL Server
 
 ```cmd   
 Get-Help .\src\NetworkSharedFolderAccessChecker.ps1 -detailed
@@ -76,3 +76,31 @@ REMARKS
     For more information, type: "get-help D:\Github\network_shared_folder_access_checker\src\NetworkSharedFolderAccessChecker.ps1 -detailed".
     For technical information, type: "get-help D:\Github\network_shared_folder_access_checker\src\NetworkSharedFolderAccessChecker.ps1 -full".
 ```
+
+# Output
+
+If any connection get a fail state an email like this will be sent to the user:
+```html
+Hi,
+
+Impossible to access to the following shared folders:
+
+\\test\XPTO\test1
+test
+\\test\XPTO
+
+
+Impossible to access SQL Server Database:
+
+localhost\CHECKMARX:CxDBdsf
+
+
+Best Regards,
+Checkmarx
+```
+
+# License
+
+MIT License
+
+Copyright (c) 2020 CX PS EMEA
