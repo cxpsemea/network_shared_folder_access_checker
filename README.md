@@ -2,7 +2,7 @@
 Powershell Script to check if user has access to a Network Shared Folder and SQL Server
 
 ```cmd   
-Get-Help .\src\NetworkSharedFolderAccessChecker.ps1 -detailed
+Get-Help .\src\NetworkSharedFolderAccessChecker.ps1 -Detailed
 
 NAME
     D:\Github\network_shared_folder_access_checker\src\NetworkSharedFolderAccessChecker.ps1
@@ -12,8 +12,10 @@ SYNOPSIS
 
 
 SYNTAX
-    D:\Github\network_shared_folder_access_checker\src\NetworkSharedFolderAccessChecker.ps1 [-networkShareFolders] <String[]> [-sqlServerName] <String> [-sqlDatabase] <String> [-sqlUsername] <String> [-sqlPassword] <String> [-smtpServer]
-    <String> [-smtpPort] <Int32> [-smtpSSL] <String> [-smtpUsername] <String> [-smtpPassword] <String> [-emailFrom] <String> [-emailList] <String[]> [[-emailSubject] <String>] [[-emailBody] <String>] [<CommonParameters>]
+    D:\Github\network_shared_folder_access_checker\src\NetworkSharedFolderAccessChecker.ps1 [-networkShareFolders] <String[]>   
+    [-sqlServerName] <String> [-sqlDatabase] <String> [-sqlUsername] <String> [-sqlPassword] <String> [-smtpServer] <String>    
+    [-smtpPort] <Int32> [-smtpSSL] <String> [-smtpUsername] <String> [-smtpPassword] <String> [-emailFrom] <String>
+    [-emailList] <String[]> [[-emailSubject] <String>] [[-emailBody] <String>] [<CommonParameters>]
 
 
 DESCRIPTION
@@ -24,57 +26,61 @@ DESCRIPTION
 
 PARAMETERS
     -networkShareFolders <String[]>
-        Network Shared Folders (eg. \\temp\test,\\temp\sample)
+        Network Shared Folders (eg. \\temp\test,\\temp\sample) - Required
 
     -sqlServerName <String>
-        SQL Server Name
+        SQL Server Name - Required
 
     -sqlDatabase <String>
-        SQL Database
+        SQL Database - Required
 
     -sqlUsername <String>
-        SQL Username
+        SQL Username - Required
 
     -sqlPassword <String>
-        SQL Password
+        SQL Password - Required
 
     -smtpServer <String>
-        SMTP Server (eg. smtp.mailtrap.io)
+        SMTP Server (eg. smtp.mailtrap.io) - Required
 
     -smtpPort <Int32>
-        SMTP Port (eg. 25 or 465 or 587 or 2525)
-        
+        SMTP Port (eg. 587) - Required
+
     -smtpSSL <String>
-        SMTP SSL (eg. true or false)
+        SMTP SSL (eg. true or false) - Required
 
     -smtpUsername <String>
-        SMTP Username
+        SMTP Username - Required
 
     -smtpPassword <String>
-        SMTP Password
+        SMTP Password - Required
 
     -emailFrom <String>
-        Email Sender (eg. first.last@company.com)
+        Email Sender (eg. first.last@company.com) - Required
 
     -emailList <String[]>
-        Email Recipients (eg. first.last@company.com,second.last@company.com)
+        Email Recipients (eg. first.last@company.com,second.last@company.com) - Required
 
     -emailSubject <String>
-        Email Subject, Default = [Checkmarx] Cannot Access to Shared Folder
+        Email Subject, Default = [Checkmarx] Cannot Access to Shared Folder - Optional
 
     -emailBody <String>
-        Email Body (HTML), Default = Hi,</br></br>Impossible to access to the following shared folders:</br></br>#SHARED_FOLDERS</br></br>Best Regards,</br>Checkmarx
+        Email Body (HTML), Default = Hi,</br></br>Impossible to access to the following shared
+        folders:</br></br>#SHARED_FOLDERS#DATABASE</br></br>Best Regards,</br>Checkmarx - Optional
 
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters (https:/go.microsoft.com/fwlink/?LinkID=113216). 
+        about_CommonParameters (https:/go.microsoft.com/fwlink/?LinkID=113216).
 
 REMARKS
-    To see the examples, type: "get-help D:\Github\network_shared_folder_access_checker\src\NetworkSharedFolderAccessChecker.ps1 -examples".
-    For more information, type: "get-help D:\Github\network_shared_folder_access_checker\src\NetworkSharedFolderAccessChecker.ps1 -detailed".
-    For technical information, type: "get-help D:\Github\network_shared_folder_access_checker\src\NetworkSharedFolderAccessChecker.ps1 -full".
+    To see the examples, type: "get-help
+    D:\Github\network_shared_folder_access_checker\src\NetworkSharedFolderAccessChecker.ps1 -examples".
+    For more information, type: "get-help
+    D:\Github\network_shared_folder_access_checker\src\NetworkSharedFolderAccessChecker.ps1 -detailed".
+    For technical information, type: "get-help
+    D:\Github\network_shared_folder_access_checker\src\NetworkSharedFolderAccessChecker.ps1 -full".
 ```
 
 # Output
@@ -85,14 +91,14 @@ Hi,
 
 Impossible to access to the following shared folders:
 
-\\test\XPTO\test1
-test
-\\test\XPTO
+- \\test\XPTO\test1
+- test
+- \\test\XPTO
 
 
 Impossible to access SQL Server Database:
 
-localhost\CHECKMARX:CxDBdsf
+- localhost\CHECKMARX:CxDBdsf
 
 
 Best Regards,

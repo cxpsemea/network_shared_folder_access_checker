@@ -15,85 +15,85 @@
     interpret any characters as escape sequences.
 #>
 Param(
-    # Network Shared Folders (eg. \\temp\test,\\temp\sample)
+    # Network Shared Folders (eg. \\temp\test,\\temp\sample) - Required
     [Parameter(
         Position = 0,
         Mandatory = $true,
         HelpMessage = "Network Shared Folders (eg. \\temp\test,\\temp\sample)"
     )][string[]] $networkShareFolders,
-    # SQL Server Name
+    # SQL Server Name - Required
     [Parameter(
         Position = 1,
         Mandatory = $true,
         HelpMessage = "SQL Server Name"
     )][string] $sqlServerName,
-    # SQL Database
+    # SQL Database - Required
     [Parameter(
         Position = 2,
         Mandatory = $true,
         HelpMessage = "SQL Database"
     )][string] $sqlDatabase,
-    # SQL Username
+    # SQL Username - Required
     [Parameter(
         Position = 3,
         Mandatory = $true,
         HelpMessage = "SQL Username"
     )][string] $sqlUsername,
-    # SQL Password
+    # SQL Password - Required
     [Parameter(
         Position = 4,
         Mandatory = $true,
         HelpMessage = "SQL Password"
     )][string] $sqlPassword,
-    # SMTP Server (eg. smtp.mailtrap.io)
+    # SMTP Server (eg. smtp.mailtrap.io) - Required
     [Parameter(
         Position = 5,
         Mandatory = $true,
         HelpMessage = "SMTP Server (eg. smtp.mailtrap.io)"
     )][string] $smtpServer,
-    # SMTP Port (eg. 25 or 465 or 587 or 2525)
+    # SMTP Port (eg. 587) - Required
     [Parameter(
         Position = 6,
         Mandatory = $true,
-        HelpMessage = "SMTP Port (eg. 25 or 465 or 587 or 2525)"
+        HelpMessage = "SMTP Port (eg. 587)"
     )][int] $smtpPort,
-    # SMTP SSL (eg. true or false)
+    # SMTP SSL (eg. true or false) - Required
     [Parameter(
         Position = 7,
         Mandatory = $true,
         HelpMessage = "SMTP SSL (eg. true or false)"
     )][string] $smtpSSL,
-    # SMTP Username
+    # SMTP Username - Required
     [Parameter(
         Position = 8,
         Mandatory = $true,
         HelpMessage = "SMTP Username"
     )][string] $smtpUsername,
-    # SMTP Password
+    # SMTP Password - Required
     [Parameter(
         Position = 9,
         Mandatory = $true,
         HelpMessage = "SMTP Password"
     )][string] $smtpPassword,
-    # Email Sender (eg. first.last@company.com)
+    # Email Sender (eg. first.last@company.com) - Required
     [Parameter(
         Position = 10,
         Mandatory = $true,
         HelpMessage = "Email Sender (eg. first.last@company.com)"
     )][string] $emailFrom,
-    # Email Recipients (eg. first.last@company.com,second.last@company.com)
+    # Email Recipients (eg. first.last@company.com,second.last@company.com) - Required
     [Parameter(
         Position = 11,
         Mandatory = $true,
         HelpMessage = "Email Recipients (eg. first.last@company.com,second.last@company.com)"
     )][string[]] $emailList,
-    # Email Subject, Default = [Checkmarx] Cannot Access to Shared Folder
+    # Email Subject, Default = [Checkmarx] Cannot Access to Shared Folder - Optional
     [Parameter(
         Position = 12,
         Mandatory = $false,
         HelpMessage = "Email Subject"
     )][string] $emailSubject = "[Checkmarx] Cannot Access to Shared Folder",
-    # Email Body (HTML), Default = Hi,</br></br>Impossible to access to the following shared folders:</br></br>#SHARED_FOLDERS</br></br>Best Regards,</br>Checkmarx
+    # Email Body (HTML), Default = Hi,</br></br>Impossible to access to the following shared folders:</br></br>#SHARED_FOLDERS#DATABASE</br></br>Best Regards,</br>Checkmarx - Optional
     [Parameter(
         Position = 13,
         Mandatory = $false,
@@ -178,11 +178,13 @@ function getSanitizedValue {
         [string]$s
     )
     
-    $s = $s.Replace("<", "")
-    $s = $s.Replace(">", "")
-    $s = $s.Replace("'", "")
-    $s = $s.Replace("/", "")
-    $s = $s.Replace("`"", "")
+    if ($s -and $s.Length -gt 0) {
+        $s = $s.Replace("<", "")
+        $s = $s.Replace(">", "")
+        $s = $s.Replace("'", "")
+        $s = $s.Replace("/", "")
+        $s = $s.Replace("`"", "")
+    }
     return $s
 }
 
