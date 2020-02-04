@@ -171,6 +171,22 @@ function folderCheck {
 }
 
 <#
+This is the method to get sanitized value for XSS
+#>
+function getSanitizedValue {
+    Param(
+        [string]$s
+    )
+    
+    $s = $s.Replace("<", "")
+    $s = $s.Replace(">", "")
+    $s = $s.Replace("'", "")
+    $s = $s.Replace("/", "")
+    $s = $s.Replace("`"", "")
+    return $s
+}
+
+<#
 This is the method for sending an email if access to a network share is not available.
 
 Error codes and corresponding checks
@@ -195,16 +211,15 @@ function sendEmail {
     )
     $sharedFoldersBody = ""
     foreach ($sharedFolder in $sharedFolders) {
-        $sharedFolder = $sharedFolder.Replace("<", "")
-        $sharedFolder = $sharedFolder.Replace(">", "")
-        $sharedFolder = $sharedFolder.Replace("'", "")
-        $sharedFolder = $sharedFolder.Replace("/", "")
-        $sharedFolder = $sharedFolder.Replace("`"", "")
+        $sharedFolder = getSanitizedValue $sharedFolder
         $sharedFoldersBody += "<li>${sharedFolder}</li>"
     }
-    if($dbAvailable){
+    if ($dbAvailable) {
         $body = $body.Replace("#DATABASE", "")
-    } else {
+    }
+    else {
+        $sqlServer = getSanitizedValue $sqlServer
+        $sqlDatabase = getSanitizedValue $sqlDatabase
         $body = $body.Replace("#DATABASE", "</br></br>Impossible to access SQL Server Database:</br></br><li>${sqlServer}:${sqlDatabase}</li>")
     }
     $body = $body.Replace("#SHARED_FOLDERS", $sharedFoldersBody)
@@ -253,7 +268,8 @@ function checkDbConnection {
         $sqlConnection.Open()
         $sqlConnection.Close()
         return $true
-    } catch{
+    }
+    catch {
         $exceptionMessage = $_.Exception.Message
         Write-Error "Failing to connect to SQL Server Database ${server}:${database} : ${exceptionMessage}"
         return $false
